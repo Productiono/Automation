@@ -332,8 +332,6 @@ class Recipe_Post_Utilities {
 			// The Events Calendar
 			'tribe-select2',
 
-			// Studiocart
-			'sc-select2_js',
 
 			// JW Player 6 for WordPress
 			'jquerySelect2',
@@ -356,8 +354,6 @@ class Recipe_Post_Utilities {
 			// LearnDash
 			'learndash-select2-jquery-style',
 
-			// Studiocart
-			'sc-select2_css',
 
 			// JW Player 6 for WordPress
 			'jquerySelect2Style',
