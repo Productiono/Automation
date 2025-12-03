@@ -5,6 +5,8 @@ namespace Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Helpers\Facebook_Lead_Ads_Helpers;
+use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Client;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -34,6 +36,13 @@ class Rest_Api {
 	const LISTENER_REST_ROUTE = '/integration/facebook-lead-ads';
 
 	/**
+	 * OAuth redirect REST route.
+	 *
+	 * @var string
+	 */
+	const OAUTH_REST_ROUTE = '/integration/facebook-lead-ads/oauth';
+
+	/**
 	 * Verification REST route.
 	 *
 	 * @var string
@@ -47,6 +56,15 @@ class Rest_Api {
 	 */
 	public static function get_listener_endpoint_url() {
 		return rest_url( self::REST_NAMESPACE . self::LISTENER_REST_ROUTE );
+	}
+
+	/**
+	 * Returns the OAuth redirect URL.
+	 *
+	 * @return string OAuth redirect URL.
+	 */
+	public static function get_oauth_redirect_url() {
+		return rest_url( self::REST_NAMESPACE . self::OAUTH_REST_ROUTE );
 	}
 
 	/**
@@ -77,6 +95,17 @@ class Rest_Api {
 				'permission_callback' => '__return_true', // Public route.
 			)
 		);
+
+		// OAuth redirect endpoint.
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::OAUTH_REST_ROUTE,
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'oauth_redirect_handler' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	/**
@@ -89,7 +118,6 @@ class Rest_Api {
 	 */
 	public function verification_handle_request( WP_REST_Request $request ) {
 
-		// Your processing logic here.
 		return new WP_REST_Response( array( 'received' => time() ), 200 );
 	}
 
@@ -131,7 +159,6 @@ class Rest_Api {
 		 */
 		do_action( 'automator_facebook_lead_ads_rest_api_handle_request_after', $args );
 
-		// Your processing logic here.
 		return rest_ensure_response(
 			array(
 				'code'    => 'rest_success',
@@ -158,5 +185,98 @@ class Rest_Api {
 				},
 			),
 		);
+	}
+
+	/**
+	 * Handles the OAuth redirect from Facebook.
+	 *
+	 * Exchanges the code for an access token, stores credentials, and redirects back
+	 * to the settings screen.
+	 *
+	 * @param WP_REST_Request $request The REST API request object.
+	 *
+	 * @return WP_REST_Response|void
+	 */
+	public function oauth_redirect_handler( WP_REST_Request $request ) {
+
+		$state = $request->get_param( 'state' );
+
+		if ( ! wp_verify_nonce( $state, Facebook_Lead_Ads_Helpers::CONNECTION_NONCE ) ) {
+			return $this->redirect_with_message( __( 'Invalid authorization state received.', 'uncanny-automator' ) );
+		}
+
+		$code = $request->get_param( 'code' );
+
+		if ( empty( $code ) ) {
+			return $this->redirect_with_message( __( 'Authorization code missing from Facebook response.', 'uncanny-automator' ) );
+		}
+
+		$client = new Client();
+
+		$token_response = $client->exchange_code_for_token( $code, self::get_oauth_redirect_url() );
+
+		if ( is_wp_error( $token_response ) || empty( $token_response['access_token'] ) ) {
+			$message = is_wp_error( $token_response ) ? $token_response->get_error_message() : __( 'Unable to retrieve access token from Facebook.', 'uncanny-automator' );
+			return $this->redirect_with_message( $message );
+		}
+
+		$long_lived_response = $client->exchange_long_lived_token( $token_response['access_token'] );
+		$user_access_token   = $long_lived_response['access_token'] ?? $token_response['access_token'];
+
+		$user_profile = $client->get_user_profile( $user_access_token );
+
+		if ( is_wp_error( $user_profile ) ) {
+			return $this->redirect_with_message( $user_profile->get_error_message() );
+		}
+
+		$pages = $client->get_pages( $user_access_token );
+
+		if ( is_wp_error( $pages ) ) {
+			return $this->redirect_with_message( $pages->get_error_message() );
+		}
+
+		$pages_data = (array) $pages['data'] ?? array();
+
+		foreach ( $pages_data as $page ) {
+			if ( empty( $page['id'] ) || empty( $page['access_token'] ) ) {
+				continue;
+			}
+
+			$client->subscribe_page_to_leads( $page['id'], $page['access_token'] );
+		}
+
+		$connections_manager = Facebook_Lead_Ads_Helpers::create_connection_manager();
+
+		try {
+			$connections_manager->connect(
+				array(
+					'user_access_token'  => $user_access_token,
+					'user'               => $user_profile,
+					'pages_access_tokens' => $pages_data,
+				)
+			);
+		} catch ( \InvalidArgumentException $exception ) {
+			return $this->redirect_with_message( $exception->getMessage() );
+		}
+
+		return $this->redirect_with_message();
+	}
+
+	/**
+	 * Redirects back to the settings screen with an optional error message.
+	 *
+	 * @param string $message Optional message to display.
+	 *
+	 * @return void
+	 */
+	private function redirect_with_message( $message = '' ) {
+		$url = Facebook_Lead_Ads_Helpers::get_settings_page_url();
+
+		if ( ! empty( $message ) ) {
+			$url = add_query_arg( 'error_message', rawurlencode( $message ), $url );
+		}
+
+		wp_safe_redirect( $url );
+		exit;
 	}
 }

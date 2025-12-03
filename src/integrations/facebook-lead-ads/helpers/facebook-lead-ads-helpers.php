@@ -6,6 +6,7 @@ use Uncanny_Automator\Automator_Helpers_Recipe;
 use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Client;
 use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Connections_Manager;
 use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Credentials_Manager;
+use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Oauth;
 use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Page_Connection_Verifier;
 use Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities\Rest_Api;
 
@@ -133,9 +134,9 @@ class Facebook_Lead_Ads_Helpers {
 	 *
 	 * @return array Decoded token data.
 	 */
-	private static function decode_token_data( $data ) {
-		return Automator_Helpers_Recipe::automator_api_decode_message( $data, wp_create_nonce( self::CONNECTION_NONCE ) );
-	}
+private static function decode_token_data( $data ) {
+return Automator_Helpers_Recipe::automator_api_decode_message( $data, wp_create_nonce( self::CONNECTION_NONCE ) );
+}
 
 	/**
 	 * Builds the connection arguments from the token data.
@@ -351,33 +352,31 @@ class Facebook_Lead_Ads_Helpers {
 	 *
 	 * @return string Connection URL.
 	 */
-	public static function get_connect_url() {
-
-		$query_args = array(
-			'action'       => 'authorization',
-			'nonce'        => wp_create_nonce( 'automator_facebook_lead_ads_connection_nonce' ),
-			'user_url'     => get_site_url(),
-			'user_api_url' => Rest_Api::get_listener_endpoint_url(),
-			'plugin_ver'   => AUTOMATOR_PLUGIN_VERSION,
+        public static function get_connect_url() {
+		$scope = implode(
+			','
+			array(
+				'pages_manage_metadata',
+				'pages_read_engagement',
+				'public_profile',
+				'pages_show_list',
+				'pages_manage_ads',
+				'leads_retrieval',
+				'business_management',
+			)
 		);
 
-		$connection = self::create_connection_manager();
+		$query_args = array(
+			'client_id'     => Oauth::get_app_id(),
+			'redirect_uri'  => Rest_Api::get_oauth_redirect_url(),
+			'scope'         => $scope,
+			'state'         => wp_create_nonce( self::CONNECTION_NONCE ),
+			'display'       => 'popup',
+			'response_type' => 'code',
+		);
 
-		if ( $connection->site_has_basic_auth() ) {
-			$creds = wp_json_encode(
-				array(
-					'basic_auth_username' => AUTOMATOR_FACEBOOK_LEAD_ADS_BASIC_AUTH_USERNAME,
-					'basic_auth_password' => AUTOMATOR_FACEBOOK_LEAD_ADS_BASIC_AUTH_PASSWORD,
-				)
-			);
-
-			$query_args['basic_auth'] = rawurlencode(
-				base64_encode( $creds ) // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
-			);
-		}
-
-		return add_query_arg( $query_args, AUTOMATOR_API_URL . self::API_ENDPOINT );
-	}
+		return add_query_arg( $query_args, 'https://www.facebook.com/' . Oauth::get_api_version() . '/dialog/oauth' );
+        }
 
 	/**
 	 * Generates the disconnection URL.

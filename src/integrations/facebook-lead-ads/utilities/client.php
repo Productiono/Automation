@@ -2,7 +2,6 @@
 namespace Uncanny_Automator\Integrations\Facebook_Lead_Ads\Utilities;
 
 use Exception;
-use Uncanny_Automator\Api_Server;
 use WP_Error;
 
 /**
@@ -15,16 +14,11 @@ use WP_Error;
 class Client {
 
 	/**
-	 * API endpoint for Facebook Lead Ads integration.
-	 */
-	const ENDPOINT = 'v2/facebook-lead-ads';
-
-	/**
-	 * The full URL of the API endpoint.
+	 * Facebook Graph base URL.
 	 *
 	 * @var string
 	 */
-	protected $endpoint_url = '';
+	protected $graph_base_url = 'https://graph.facebook.com/';
 
 	/**
 	 * Manages Facebook credentials.
@@ -39,7 +33,6 @@ class Client {
 	 * Initializes the endpoint URL and credentials manager.
 	 */
 	public function __construct() {
-		$this->endpoint_url        = AUTOMATOR_API_URL . self::ENDPOINT;
 		$this->credentials_manager = new Credentials_Manager();
 	}
 
@@ -49,21 +42,33 @@ class Client {
 	 * @return array|WP_Error Array of tokens on success or WP_Error on failure.
 	 * @throws Exception If an error occurs during the request.
 	 */
-	public function get_page_access_tokens() {
+public function get_page_access_tokens() {
 
-		$args = array(
-			'action'       => 'get_user_pages',
-			'access_token' => $this->credentials_manager->get_user_access_token(),
-		);
+$access_token = $this->credentials_manager->get_user_access_token();
 
-		try {
-			$response = self::send_request( $args );
-		} catch ( Exception $e ) {
-			return new WP_Error( 'page_access_token_exception', $e->getMessage() );
-		}
+if ( empty( $access_token ) ) {
+return new WP_Error( 'missing_token', __( 'The user access token is missing.', 'uncanny-automator' ) );
+}
 
-		return $response;
-	}
+return $this->get_pages( $access_token );
+}
+
+/**
+ * Retrieves pages for a given access token.
+ *
+ * @param string $access_token Access token to query with.
+ *
+ * @return array|WP_Error
+ */
+public function get_pages( $access_token ) {
+return $this->graph_get(
+'/me/accounts',
+array(
+'fields'       => 'id,name,access_token',
+'access_token' => $access_token,
+)
+);
+}
 
 	/**
 	 * Retrieves forms associated with a Facebook page.
@@ -75,19 +80,17 @@ class Client {
 	 */
 	public function get_forms( int $page_id, string $page_access_token ) {
 
-		$args = array(
-			'action'            => 'get_forms',
-			'page_id'           => $page_id,
-			'page_access_token' => $page_access_token,
-		);
-
 		try {
-			$response = self::send_request( $args, $page_id );
+			return $this->graph_get(
+				'/' . absint( $page_id ) . '/leadgen_forms',
+				array(
+					'fields'       => 'id,name',
+					'access_token' => $page_access_token,
+				)
+			);
 		} catch ( Exception $e ) {
 			return new WP_Error( 'Error: get_forms method exception', $e->getMessage() );
 		}
-
-		return $response;
 	}
 
 	/**
@@ -101,20 +104,17 @@ class Client {
 	 */
 	public function get_form_fields( int $page_id, int $form_id, string $page_access_token ) {
 
-		$args = array(
-			'action'            => 'get_form_fields',
-			'form_id'           => $form_id,
-			'page_id'           => $page_id,
-			'page_access_token' => $page_access_token,
-		);
-
 		try {
-			$response = self::send_request( $args, $page_id );
+			return $this->graph_get(
+				'/' . absint( $form_id ),
+				array(
+					'fields'       => 'questions,leads_count,locale',
+					'access_token' => $page_access_token,
+				)
+			);
 		} catch ( Exception $e ) {
 			return new WP_Error( 'Error: get_form_fields method exception', $e->getMessage() );
 		}
-
-		return $response;
 	}
 
 	/**
@@ -126,49 +126,197 @@ class Client {
 	 */
 	public function get_lead( int $page_id, int $lead_id, string $page_access_token ) {
 
-		$args = array(
-			'action'            => 'get_lead',
-			'lead_id'           => $lead_id,
-			'page_access_token' => $page_access_token,
-		);
-
 		try {
-			$response = self::send_request( $args, $page_id );
+			$response = $this->graph_get(
+				'/' . absint( $lead_id ),
+				array(
+					'fields'       => 'created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,page_id,platform,custom_disclaimer_responses',
+					'access_token' => $page_access_token,
+				)
+			);
 		} catch ( Exception $e ) {
 			return new WP_Error( 'Error: get_lead method exception', $e->getMessage() );
 		}
 
-		return (array) $response['data'] ?? array();
+		return (array) $response ?? array();
 	}
 
+	/**
+	 * Exchanges an OAuth code for a short-lived token.
+	 *
+	 * @param string $code         The code returned by Facebook.
+	 * @param string $redirect_uri The redirect URI used during authorization.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function exchange_code_for_token( $code, $redirect_uri ) {
+		return $this->graph_get(
+			'/oauth/access_token',
+			array(
+				'client_id'     => Oauth::get_app_id(),
+				'client_secret' => Oauth::get_app_secret(),
+				'redirect_uri'  => $redirect_uri,
+				'code'          => $code,
+			)
+		);
+	}
 
 	/**
-	 * Sends a request to the Facebook Lead Ads API.
+	 * Exchanges a short-lived token for a long-lived token.
 	 *
-	 * @param array       $body    The request body.
-	 * @param string|int  $page_id Optional. The ID of the Facebook page.
+	 * @param string $short_lived_token The token to exchange.
 	 *
-	 * @return array Response from the API.
-	 * @throws Exception If an error occurs during the request.
+	 * @return array|WP_Error
 	 */
-	public static function send_request( array $body = array(), $page_id = 0 ) {
+	public function exchange_long_lived_token( $short_lived_token ) {
+		return $this->graph_get(
+			'/oauth/access_token',
+			array(
+				'grant_type'        => 'fb_exchange_token',
+				'client_id'         => Oauth::get_app_id(),
+				'client_secret'     => Oauth::get_app_secret(),
+				'fb_exchange_token' => $short_lived_token,
+			)
+		);
+	}
 
-		$credentials = ( new Credentials_Manager() )->get_credentials();
+	/**
+	 * Retrieves the connected Facebook user profile.
+	 *
+	 * @param string $access_token The token to query with.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function get_user_profile( $access_token ) {
+		return $this->graph_get(
+			'/me',
+			array(
+				'fields'       => 'id,name',
+				'access_token' => $access_token,
+			)
+		);
+	}
 
-		$body['user']     = $credentials['user']['id'] ?? '';
-		$body['site_url'] = Rest_Api::get_listener_endpoint_url();
+	/**
+	 * Attempts to subscribe the app to leadgen webhooks for a page.
+	 *
+	 * @param int    $page_id           Page identifier.
+	 * @param string $page_access_token Page token.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function subscribe_page_to_leads( $page_id, $page_access_token ) {
+		return $this->graph_post(
+			'/' . absint( $page_id ) . '/subscribed_apps',
+			array(
+				'subscribed_fields' => 'leadgen',
+				'access_token'     => $page_access_token,
+			)
+		);
+	}
 
-		if ( ! empty( $page_id ) ) {
-			$body['page_vault_signature'] = $credentials['vault_signatures'][ $page_id ] ?? '';
-		}
-
-		$params = array(
-			'endpoint' => self::ENDPOINT,
-			'body'     => $body,
-			'action'   => null,
-			'timeout'  => 30,
+	/**
+	 * Verifies that a page token is valid by requesting the subscribed apps.
+	 *
+	 * @param int    $page_id           Page identifier.
+	 * @param string $page_access_token Page token.
+	 *
+	 * @return string|WP_Error
+	 */
+	public function verify_page( $page_id, $page_access_token ) {
+		$subscriptions = $this->graph_get(
+			'/' . absint( $page_id ) . '/subscribed_apps',
+			array(
+				'fields'       => 'subscribed_fields',
+				'access_token' => $page_access_token,
+			)
 		);
 
-		return Api_Server::api_call( $params );
+		if ( is_wp_error( $subscriptions ) ) {
+			return $subscriptions;
+		}
+
+		$has_leadgen = false;
+
+		foreach ( (array) ( $subscriptions['data'] ?? array() ) as $subscription ) {
+			if ( isset( $subscription['subscribed_fields'] ) && in_array( 'leadgen', (array) $subscription['subscribed_fields'], true ) ) {
+				$has_leadgen = true;
+				break;
+			}
+		}
+
+		if ( ! $has_leadgen ) {
+			return new WP_Error( 'missing_subscription', __( 'The Facebook page is not subscribed to leadgen events.', 'uncanny-automator' ) );
+		}
+
+		return __( 'Ready', 'uncanny-automator' );
+	}
+
+	/**
+	 * Makes a GET request to the Facebook Graph API.
+	 *
+	 * @param string $path   API path.
+	 * @param array  $params Query parameters.
+	 *
+	 * @return array|WP_Error
+	 * @throws Exception When the request fails.
+	 */
+	protected function graph_get( $path, array $params = array() ) {
+		return $this->graph_request( $path, $params, 'GET' );
+	}
+
+	/**
+	 * Makes a POST request to the Facebook Graph API.
+	 *
+	 * @param string $path   API path.
+	 * @param array  $params Body parameters.
+	 *
+	 * @return array|WP_Error
+	 * @throws Exception When the request fails.
+	 */
+	protected function graph_post( $path, array $params = array() ) {
+		return $this->graph_request( $path, $params, 'POST' );
+	}
+
+	/**
+	 * Sends a request to the Facebook Graph API.
+	 *
+	 * @param string $path   API path.
+	 * @param array  $params Request params.
+	 * @param string $method HTTP method.
+	 *
+	 * @return array|WP_Error
+	 * @throws Exception When HTTP fails.
+	 */
+	protected function graph_request( $path, array $params, $method = 'GET' ) {
+		$url = trailingslashit( $this->graph_base_url ) . Oauth::get_api_version() . $path;
+
+		$args = array(
+			'timeout' => 30,
+		);
+
+		if ( 'GET' === strtoupper( $method ) ) {
+			$url = add_query_arg( $params, $url );
+		} else {
+			$args['body'] = $params;
+		}
+
+		$args['method'] = strtoupper( $method );
+
+		$response = wp_remote_request( $url, $args );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status = wp_remote_retrieve_response_code( $response );
+		$body   = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $status < 200 || $status >= 300 ) {
+			$message = $body['error']['message'] ?? __( 'Unexpected error contacting Facebook.', 'uncanny-automator' );
+			return new WP_Error( 'facebook_http_error', $message );
+		}
+
+		return (array) $body;
 	}
 }
