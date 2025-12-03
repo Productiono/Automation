@@ -40,7 +40,7 @@ class Facebook_Lead_Ads_Integration extends \Uncanny_Automator\Integration {
 	 *
 	 * @return void
 	 */
-	protected function register_hooks() {
+        protected function register_hooks() {
 
 		// Captures token from OAuth flow. Ok.
 		add_action( 'wp_ajax_automator_integration_facebook_lead_ads_capture_token', array( Facebook_Lead_Ads_Helpers::class, 'capture_token_handler' ) );
@@ -61,11 +61,13 @@ class Facebook_Lead_Ads_Integration extends \Uncanny_Automator\Integration {
 		add_action( 'wp_ajax_facebook_lead_verify_page_connection', array( Facebook_Lead_Ads_Helpers::class, 'check_page_connection_handler' ) );
 
 		// Analyzes tokens.
-		add_action( 'automator_recipe_before_update', array( new Tokens_Handler(), 'analyze_tokens' ), 10, 2 );
+                add_action( 'automator_recipe_before_update', array( new Tokens_Handler(), 'analyze_tokens' ), 10, 2 );
 
-		// Endpoint registration.
-		add_action( 'rest_api_init', array( new Rest_Api(), 'register_endpoint' ) );
-	}
+                // Endpoint registration.
+                add_action( 'rest_api_init', array( new Rest_Api(), 'register_endpoint' ) );
+
+                add_filter( 'automator_integration_items', array( $this, 'append_builder_connect_url' ) );
+        }
 
 
 	/**
@@ -81,6 +83,24 @@ class Facebook_Lead_Ads_Integration extends \Uncanny_Automator\Integration {
 		$html_renderer = new Html_Partial_Renderer();
 		$connections   = Facebook_Lead_Ads_Helpers::create_connection_manager();
 
-		new Facebook_Lead_Ads_Settings( $connections, $html_renderer, $credentials );
-	}
+                new Facebook_Lead_Ads_Settings( $connections, $html_renderer, $credentials );
+        }
+
+        /**
+         * Adds the direct OAuth connect URL to the integration data exposed to the recipe builder.
+         *
+         * @param array $items Integration items.
+         *
+         * @return array
+         */
+        public function append_builder_connect_url( $items ) {
+
+                if ( ! isset( $items[ $this->integration ] ) ) {
+                        return $items;
+                }
+
+                $items[ $this->integration ]['miscellaneous']['connect_url'] = Facebook_Lead_Ads_Helpers::get_connect_url();
+
+                return $items;
+        }
 }
