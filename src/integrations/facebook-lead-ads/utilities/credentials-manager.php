@@ -22,9 +22,13 @@ class Credentials_Manager {
 	 *
 	 * @var array
 	 */
-	protected $default_credentials = array(
-		'user_access_token' => '',
-	);
+        protected $default_credentials = array(
+                'app_id'            => '',
+                'app_secret'        => '',
+                'user_access_token' => '',
+                'pages_access_tokens' => array(),
+                'user'              => array(),
+        );
 
 	/**
 	 * Set credentials in the database.
@@ -41,9 +45,9 @@ class Credentials_Manager {
 	 */
 	public function set_credentials( array $args ) {
 
-		if ( empty( $args['user_access_token'] ) ) {
-			throw new \InvalidArgumentException( 'User access token is required.' );
-		}
+                if ( empty( $args['user_access_token'] ) ) {
+                        throw new \InvalidArgumentException( 'User access token is required.' );
+                }
 
 		// Delete old credentials before saving new ones.
 		$this->delete_credentials();
@@ -166,7 +170,9 @@ class Credentials_Manager {
 	 *
 	 * @return bool True if pages credentials exist, false otherwise.
 	 */
-	public function has_pages_credentials() {
-		return $this->has_credential_key( 'pages_access_tokens' );
-	}
+        public function has_pages_credentials() {
+                $pages = $this->get_pages_credentials();
+
+                return $this->has_credential_key( 'pages_access_tokens' ) && ! empty( $pages );
+        }
 }

@@ -106,7 +106,7 @@ class Tokens_Handler {
 	 * @return void
 	 */
 	private function update_post_meta( $post_id, array $form_fields ) {
-		$fields = $form_fields['data']['questions'] ?? array();
+                $fields = $form_fields['data']['questions'] ?? $form_fields['questions'] ?? array();
 		update_post_meta( $post_id, self::POST_META_KEY, $fields );
 	}
 

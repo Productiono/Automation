@@ -65,7 +65,7 @@ class Facebook_Lead_Ads_Helpers {
 		}
 
 		// Handle success.
-		$forms   = (array) $forms['data']['data'] ?? array();
+                $forms   = (array) ( $forms['data']['data'] ?? $forms['data'] ?? array() );
 		$options = array();
 
 		foreach ( $forms as $form ) {
@@ -262,20 +262,74 @@ class Facebook_Lead_Ads_Helpers {
 	 *
 	 * @return void
 	 */
-	public static function disconnect_handler() {
+        public static function disconnect_handler() {
 
-		if ( ! current_user_can( 'manage_options' ) || ! wp_verify_nonce( automator_filter_input( 'nonce' ), 'automator_facebook_lead_ads_disconnect_nonce' ) ) {
-			wp_die( 'You are not authorized to access this page.' );
-		}
+                if ( ! current_user_can( 'manage_options' ) || ! wp_verify_nonce( automator_filter_input( 'nonce' ), 'automator_facebook_lead_ads_disconnect_nonce' ) ) {
+                        wp_die( 'You are not authorized to access this page.' );
+                }
 
-		$connections_manager = self::create_connection_manager();
-		$connections_manager->disconnect();
+                $connections_manager = self::create_connection_manager();
+                $connections_manager->disconnect();
 
-		self::settings_redirect();
-	}
+                self::settings_redirect();
+        }
 
-	/**
-	 * Retrieves a list of pages.
+        /**
+         * Handles manual credential submission from the settings form.
+         *
+         * @return void
+         */
+        public static function manual_credentials_handler() {
+
+                if ( ! current_user_can( 'manage_options' ) ) {
+                        wp_die( esc_html__( 'You are not authorized to access this page.', 'uncanny-automator' ) );
+                }
+
+                if ( ! wp_verify_nonce( automator_filter_input( 'automator_fbla_nonce' ), 'automator_fbla_manual_save' ) ) {
+                        wp_die( esc_html__( 'Invalid request. Please refresh and try again.', 'uncanny-automator' ) );
+                }
+
+                $app_id            = sanitize_text_field( automator_filter_input( 'fbla_app_id', INPUT_POST ) );
+                $app_secret        = sanitize_text_field( automator_filter_input( 'fbla_app_secret', INPUT_POST ) );
+                $user_access_token = sanitize_text_field( automator_filter_input( 'fbla_user_access_token', INPUT_POST ) );
+                $page_id           = sanitize_text_field( automator_filter_input( 'fbla_page_id', INPUT_POST ) );
+                $page_name         = sanitize_text_field( automator_filter_input( 'fbla_page_name', INPUT_POST ) );
+                $page_access_token = sanitize_text_field( automator_filter_input( 'fbla_page_access_token', INPUT_POST ) );
+
+                $args = array(
+                        'app_id'            => $app_id,
+                        'app_secret'        => $app_secret,
+                        'user_access_token' => $user_access_token,
+                        'user'              => array(
+                                'name' => $page_name ?: __( 'Manual entry', 'uncanny-automator' ),
+                                'id'   => $page_id,
+                        ),
+                );
+
+                if ( ! empty( $page_access_token ) && ! empty( $page_id ) ) {
+                        $args['pages_access_tokens'][] = array(
+                                'id'           => $page_id,
+                                'name'         => $page_name ?: $page_id,
+                                'access_token' => $page_access_token,
+                        );
+                }
+
+                $connections_manager = self::create_connection_manager();
+
+                try {
+                        $connections_manager->connect( $args );
+                        self::settings_redirect();
+                } catch ( \Exception $e ) {
+                        self::settings_redirect(
+                                array(
+                                        'error_message' => $e->getMessage(),
+                                )
+                        );
+                }
+        }
+
+        /**
+         * Retrieves a list of pages.
 	 *
 	 * Returns an array of page options in the format {text, value}.
 	 *
