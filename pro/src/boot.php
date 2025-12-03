@@ -59,14 +59,16 @@ class Boot {
 		add_action( 'plugins_loaded', array( $this, 'maybe_include_action_scheduler' ), - 10 );
 		add_action( 'plugins_loaded', array( $this, 'require_traits_files' ), 5 );
 
-		$this->initialize_loops();
-		$this->require_class_files();
+                $this->initialize_loops();
+                $this->require_class_files();
 
-		add_action( 'plugins_loaded', array( $this, 'boot_child_plugin' ), 9 );
-		add_filter( 'upgrader_pre_install', array( $this, 'upgrader_pre_install' ), 99, 2 );
+                add_action( 'plugins_loaded', array( $this, 'boot_child_plugin' ), 9 );
+                add_filter( 'upgrader_pre_install', array( $this, 'upgrader_pre_install' ), 99, 2 );
 
-// Show upgrade notice from readme.txt
-add_action( 'in_plugin_update_message-' . AUTOMATOR_PRO_PLUGIN_BASENAME, array( $this, 'in_plugin_update_message' ), 10, 2 );
+                if ( ! function_exists( '\\automator_updates_disabled' ) || ! automator_updates_disabled() ) {
+                        // Show upgrade notice from readme.txt
+                        add_action( 'in_plugin_update_message-' . AUTOMATOR_PRO_PLUGIN_BASENAME, array( $this, 'in_plugin_update_message' ), 10, 2 );
+                }
 
 		if ( is_file( UAPro_ABSPATH . 'vendor/autoload.php' ) ) {
 			include_once UAPro_ABSPATH . 'vendor/autoload.php';

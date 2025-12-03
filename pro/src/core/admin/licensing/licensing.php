@@ -96,7 +96,7 @@ class Licensing {
 	 */
 	public function __construct() {
 
-		require_once __DIR__ . '/EDD_SL_Plugin_Updater.php';
+                require_once __DIR__ . '/EDD_SL_Plugin_Updater.php';
 
 		// Create sub-page for EDD licensing
 		$this->page_name   = 'Licensing';
@@ -109,32 +109,36 @@ class Licensing {
 
 		$this->error = $this->set_defaults();
 
-		if ( true !== $this->error ) {
+                if ( true !== $this->error ) {
 
 			// Create an admin notices with the error
 			add_action( 'automator_show_internal_admin_notice', array( $this, 'licensing_setup_error' ) );
 
-		} else {
-			add_action( 'admin_init', array( $this, 'clear_field' ) );
-			add_action( 'admin_init', array( $this, 'plugin_updater' ), 0 );
-			//          add_action( 'admin_menu', array( $this, 'license_menu' ), 199 );
-			add_action( 'admin_init', array( $this, 'activate_license' ) );
-			add_action( 'admin_init', array( $this, 'deactivate_license' ) );
-			//add_action( 'admin_notices', array( $this, 'admin_notices' ) );
-			add_action( 'automator_settings_general_license_content', array( $this, 'add_licensing_errors' ) );
-			add_action( 'uapro_notify_admin_of_license_expiry', array( $this, 'admin_notices_for_expiry' ) );
-			add_action( 'automator_show_internal_admin_notice', array( $this, 'show_expiry_notice' ) );
-			add_action( 'automator_show_internal_admin_notice', array( $this, 'uapro_remind_to_add_license_notice_func' ) );
-			//Add license notice
-			add_action(
-				'after_plugin_row',
-				array(
-					$this,
-					'plugin_row',
-				),
-				10,
-				3
-			);
+                } else {
+                        add_action( 'admin_init', array( $this, 'clear_field' ) );
+
+                        if ( ! function_exists( '\\automator_updates_disabled' ) || ! automator_updates_disabled() ) {
+                                add_action( 'admin_init', array( $this, 'plugin_updater' ), 0 );
+                                add_action( 'automator_show_internal_admin_notice', array( $this, 'show_expiry_notice' ) );
+                                add_action( 'automator_show_internal_admin_notice', array( $this, 'uapro_remind_to_add_license_notice_func' ) );
+                                //Add license notice
+                                add_action(
+                                        'after_plugin_row',
+                                        array(
+                                                $this,
+                                                'plugin_row',
+                                        ),
+                                        10,
+                                        3
+                                );
+                        }
+
+                        //          add_action( 'admin_menu', array( $this, 'license_menu' ), 199 );
+                        add_action( 'admin_init', array( $this, 'activate_license' ) );
+                        add_action( 'admin_init', array( $this, 'deactivate_license' ) );
+                        //add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+                        add_action( 'automator_settings_general_license_content', array( $this, 'add_licensing_errors' ) );
+                        add_action( 'uapro_notify_admin_of_license_expiry', array( $this, 'admin_notices_for_expiry' ) );
 
 			// Maybe pre-activate Pro license
 			if ( defined( 'AUTOMATOR_PRO_LICENSE_KEY' ) ) {
