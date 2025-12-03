@@ -218,10 +218,6 @@ The free version of Automator is incredibly powerful and comes with built-in aut
 - [Schedule](https://automatorplugin.com/integration/schedule/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list) (Pro)
 - [SliceWP](https://automatorplugin.com/integration/slicewp/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
 - [SeedProd](https://automatorplugin.com/integration/seedprod/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
-- [Studiocart](https://automatorplugin.com/integration/studiocart/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
-- [SureCart](https://automatorplugin.com/integration/surecart/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
-- [SureForms](https://automatorplugin.com/integration/sureforms/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
-- [SureMembers](https://automatorplugin.com/integration/suremembers/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
 - [The Events Calendar](https://automatorplugin.com/integration/the-events-calendar/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
 - [Thrive Apprentice](https://automatorplugin.com/integration/thrive-apprentice/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
 - [Thrive Architect](https://automatorplugin.com/integration/thrive-architect/?utm_source=wp_repo_automator&utm_medium=readme&utm_content=free_integrations_list)
@@ -458,7 +454,6 @@ We're a Toronto-based WordPress company specializing in elearning and automation
 * Notion - Add / Update Database - Our date token was having an existential crisis. Now it knows what time it is. #6347
 * Notion - `str_contains` error when attempting to parse text on array values - It tried to read too much into arrays—now it's been taught better boundaries. #6261
 * Populate from Query - JS Error - `getintegrationCode` has now been defined and won't ghost us anymore. #6385
-* SureCart - A user purchases a product - This trigger was overexcited and firing twice. It's calmed down now. #6141
 * Slack - Cleanse text content of HTML before posting - Slack messages got a digital spa treatment—now scrubbed clean of unwanted HTML. #6257
 * WordPress 6.7+ translation warnings - Translation warnings were getting loud. We've hushed them up for WordPress 6.7+. #5783
 
@@ -494,7 +489,6 @@ We're a Toronto-based WordPress company specializing in elearning and automation
   * Notion #6165
   * Presto #6189
   * Sendy #6327
-  * SureCart #6141
   * Threads #6249
   * Thrive Leads #5951
   * Twilio #6219

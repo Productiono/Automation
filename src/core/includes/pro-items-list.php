@@ -2458,62 +2458,6 @@ function automator_pro_items_list() {
 			),
 			'actions'    => array(),
 		),
-		'STUDIOCART' => array(
-			'name'       => 'Studiocart',
-			'pro_only'   => 'no',
-			'elite_only' => 'no',
-			'triggers'   => array(
-				array(
-					'name' => esc_html_x( "A user's subscription is cancelled for {{a product}}", 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'logged-in',
-				),
-				array(
-					'name' => esc_html_x( 'A guest completes an order for {{a product}}', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'anonymous',
-				),
-			),
-			'actions'    => array(),
-		),
-		'SURECART' => array(
-			'name'       => 'SureCart',
-			'pro_only'   => 'no',
-			'elite_only' => 'no',
-			'triggers'   => array(
-				array(
-					'name' => esc_html_x( 'A user renews a subscription to {{a product}}', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'logged-in',
-				),
-				array(
-					'name' => esc_html_x( "A user's subscription to {{a product}} is cancelled", 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'logged-in',
-				),
-				array(
-					'name' => esc_html_x( 'A guest purchases {{a product}}', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'anonymous',
-				),
-				array(
-					'name' => esc_html_x( 'A refund for {{a product}} is issued to a customer', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'anonymous',
-				),
-			),
-			'actions'    => array(),
-		),
-		'SURE_FORMS' => array(
-			'name'       => 'SureForms',
-			'pro_only'   => 'no',
-			'elite_only' => 'no',
-			'triggers'   => array(
-				array(
-					'name' => esc_html_x( 'A user submits {{a form}} with {{a specific value}} in {{a specific field}}', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'logged-in',
-				),
-				array(
-					'name' => esc_html_x( '{{A form}} is submitted with {{a specific value}} in {{a specific field}}', 'Automator Pro item', 'uncanny-automator' ),
-					'type' => 'anonymous',
-				),
-			),
-			'actions'    => array(),
-		),
 		'EC' => array(
 			'name'       => 'The Events Calendar',
 			'pro_only'   => 'no',
