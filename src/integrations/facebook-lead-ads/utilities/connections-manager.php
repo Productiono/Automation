@@ -86,27 +86,23 @@ class Connections_Manager {
 	 *
 	 * @return mixed The result of the verification or a WP_Error on failure.
 	 */
-	public function verify_connection( $url ) {
-		if ( empty( $url ) || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
-			return new WP_Error( 'invalid_url', esc_html_x( 'The provided URL is invalid.', 'Facebook Lead Ads', 'uncanny-automator' ) );
-		}
+        public function verify_connection( $url ) {
+                try {
+                        $client = new Client();
+                        $result = $client->verify_tokens();
+                } catch ( Exception $e ) {
+                        return new WP_Error( 'connection_error', $e->getMessage() );
+                }
 
-		$body = $this->prepare_body(
-			array(
-				'site_url' => $url,
-				'action'   => 'verify_connection',
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
-			)
-		);
+                if ( is_wp_error( $result ) ) {
+                        return $result;
+                }
 
-		try {
-			$result = Client::send_request( $body );
-		} catch ( Exception $e ) {
-			return new WP_Error( 'connection_error', $e->getMessage() );
-		}
-
-		return $result;
-	}
+                return array(
+                        'status' => 'ready',
+                        'data'   => $result,
+                );
+        }
 
 	/**
 	 * Verifies the connection to a specific page.
@@ -122,7 +118,7 @@ class Connections_Manager {
 			return new WP_Error( 'invalid_page_id', esc_html_x( 'The provided page ID is invalid.', 'Facebook Lead Ads', 'uncanny-automator' ) );
 		}
 
-		$status = $this->page_connection_verifier->verify_page_connection( $page_id, $force );
+                $status = $this->page_connection_verifier->verify_page_connection( $page_id, $force );
 
 		if ( is_wp_error( $status ) ) {
 			return new WP_Error( 'connection_error', $status->get_error_message() );

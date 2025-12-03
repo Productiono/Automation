@@ -199,11 +199,11 @@ class Facebook_Lead_Ads_Settings extends \Uncanny_Automator\Settings\Premium_Int
 		$credentials = ( new Credentials_Manager() )->get_credentials();
 		$fb_user     = $credentials['user'] ?? null;
 
-		$args = array(
-			'connection_url' => Facebook_Lead_Ads_Helpers::get_connect_url(),
-			'has_connection' => $this->connections->has_connection(),
-			'user'           => $fb_user,
-		);
+                $args = array(
+                        'has_connection' => $this->connections->has_connection(),
+                        'user'           => $fb_user,
+                        'credentials'    => $credentials,
+                );
 
 		$this->html_renderer->render_html_partial( 'views/output-content-bottom-left.php', $args );
 	}
