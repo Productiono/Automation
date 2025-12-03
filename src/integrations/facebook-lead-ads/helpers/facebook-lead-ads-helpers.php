@@ -318,8 +318,42 @@ class Facebook_Lead_Ads_Helpers {
 
                 try {
                         $connections_manager->connect( $args );
+
+                        $client = new Client();
+
+                        $user_validation = $client->verify_tokens();
+
+                        if ( is_wp_error( $user_validation ) ) {
+                                throw new \Exception( $user_validation->get_error_message() );
+                        }
+
+                        if ( ! empty( $page_access_token ) && ! empty( $page_id ) ) {
+                                $page_validation = $client->verify_page_token( $page_id, $page_access_token );
+
+                                if ( is_wp_error( $page_validation ) ) {
+                                        throw new \Exception( $page_validation->get_error_message() );
+                                }
+                        }
+
+                        if ( wp_doing_ajax() ) {
+                                wp_send_json_success(
+                                        array(
+                                                'message' => esc_html__( 'Connection verified successfully.', 'uncanny-automator' ),
+                                        )
+                                );
+                        }
+
                         self::settings_redirect();
                 } catch ( \Exception $e ) {
+                        if ( wp_doing_ajax() ) {
+                                wp_send_json_error(
+                                        array(
+                                                'message' => $e->getMessage(),
+                                        ),
+                                        400
+                                );
+                        }
+
                         self::settings_redirect(
                                 array(
                                         'error_message' => $e->getMessage(),
