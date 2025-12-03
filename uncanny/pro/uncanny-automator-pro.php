@@ -1,35 +1,30 @@
 <?php
 /**
- * Plugin Name:         Uncanny Automator Pro
- * Description:         Add hundreds of triggers, actions, and tokens plus delays, conditions, loops and more with this premium addon for Uncanny Automator.
- * Author:              Uncanny Automator
- * Author URI:          https://www.uncannyowl.com/
- * Plugin URI:          https://automatorplugin.com/
- * Text Domain:         uncanny-automator-pro
- * Domain Path:         /languages
- * License:             GPLv3
- * License URI:         https://www.gnu.org/licenses/gpl-3.0.html
- * Version:             6.7.0.3
- * Requires at least:   5.6
- * Requires PHP:        7.3
- * Requires Plugins:    uncanny-automator
+ * Pro bootstrap loaded from the unified Automator plugin.
  */
 
 use Uncanny_Automator\Automator_Functions;
 use Uncanny_Automator_Pro\Automator_Pro_Load;
 
 if ( ! defined( 'AUTOMATOR_PRO_PLUGIN_VERSION' ) ) {
-	/**
-	 * Specify Automator Pro version.
+/**
+ * Specify Automator Pro version.
 	 */
 	define( 'AUTOMATOR_PRO_PLUGIN_VERSION', '6.7.0.3' );
 }
 
 if ( ! defined( 'AUTOMATOR_PRO_FILE' ) ) {
-	/**
-	 * Specify Automator Pro base file.
-	 */
-	define( 'AUTOMATOR_PRO_FILE', __FILE__ );
+/**
+ * Specify Automator Pro base file.
+ */
+define( 'AUTOMATOR_PRO_FILE', __FILE__ );
+}
+
+if ( ! defined( 'AUTOMATOR_PRO_PLUGIN_BASENAME' ) ) {
+/**
+ * Specify Automator Pro plugin basename (uses unified plugin entry point).
+ */
+define( 'AUTOMATOR_PRO_PLUGIN_BASENAME', plugin_basename( AUTOMATOR_BASE_FILE ) );
 }
 
 if ( version_compare( PHP_VERSION, '7.0', '<' ) ) {

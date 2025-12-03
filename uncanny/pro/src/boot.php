@@ -65,8 +65,8 @@ class Boot {
 		add_action( 'plugins_loaded', array( $this, 'boot_child_plugin' ), 9 );
 		add_filter( 'upgrader_pre_install', array( $this, 'upgrader_pre_install' ), 99, 2 );
 
-		// Show upgrade notice from readme.txt
-		add_action( 'in_plugin_update_message-' . plugin_basename( AUTOMATOR_PRO_FILE ), array( $this, 'in_plugin_update_message' ), 10, 2 );
+// Show upgrade notice from readme.txt
+add_action( 'in_plugin_update_message-' . AUTOMATOR_PRO_PLUGIN_BASENAME, array( $this, 'in_plugin_update_message' ), 10, 2 );
 
 		if ( is_file( UAPro_ABSPATH . 'vendor/autoload.php' ) ) {
 			include_once UAPro_ABSPATH . 'vendor/autoload.php';
@@ -126,7 +126,7 @@ class Boot {
 		}
 
 		// The path to the specific plugin to check for, relative to the wp-content/plugins directory.
-		$specific_plugin_path = plugin_basename( AUTOMATOR_PRO_FILE );
+$specific_plugin_path = AUTOMATOR_PRO_PLUGIN_BASENAME;
 
 		foreach ( $options['plugins'] as $plugin_path ) {
 			if ( $plugin_path !== $specific_plugin_path ) {

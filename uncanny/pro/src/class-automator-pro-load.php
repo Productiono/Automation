@@ -66,11 +66,11 @@ class Automator_Pro_Load {
 	 */
 	private function initialize_config() {
 
-		//do_action( 'uapro_define_constants_after' );
+//do_action( 'uapro_define_constants_after' );
 
-		//register_activation_hook( AUTOMATOR_PRO_FILE, array( $this, 'activation' ) );
+//register_activation_hook( AUTOMATOR_PRO_FILE, array( $this, 'activation' ) );
 
-		register_deactivation_hook( AUTOMATOR_PRO_FILE, array( $this, 'deactivation' ) );
+register_deactivation_hook( AUTOMATOR_BASE_FILE, array( $this, 'deactivation' ) );
 
 		//do_action( 'uapro_config_setup_after' );
 	}

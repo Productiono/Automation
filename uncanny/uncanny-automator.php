@@ -146,3 +146,8 @@ Automator_Load::get_instance();
 
 $actionify = new Actionify_Triggers\Trigger_Engine();
 $actionify->init();
+
+// Load Automator Pro within the unified plugin package.
+	if ( file_exists( UA_ABSPATH . 'pro' . DIRECTORY_SEPARATOR . 'uncanny-automator-pro.php' ) ) {
+		include_once UA_ABSPATH . 'pro' . DIRECTORY_SEPARATOR . 'uncanny-automator-pro.php';
+	}
