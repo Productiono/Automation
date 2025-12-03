@@ -86,27 +86,26 @@ class Connections_Manager {
 	 *
 	 * @return mixed The result of the verification or a WP_Error on failure.
 	 */
-	public function verify_connection( $url ) {
-		if ( empty( $url ) || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
-			return new WP_Error( 'invalid_url', esc_html_x( 'The provided URL is invalid.', 'Facebook Lead Ads', 'uncanny-automator' ) );
-		}
+public function verify_connection( $url ) {
+if ( empty( $url ) || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+return new WP_Error( 'invalid_url', esc_html_x( 'The provided URL is invalid.', 'Facebook Lead Ads', 'uncanny-automator' ) );
+}
 
-		$body = $this->prepare_body(
-			array(
-				'site_url' => $url,
-				'action'   => 'verify_connection',
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
-			)
-		);
+$response = wp_remote_post(
+$url,
+array(
+'body'    => wp_json_encode( array( 'action' => 'verify_connection' ) ),
+'headers' => array( 'Content-Type' => 'application/json' ),
+'timeout' => 15,
+)
+);
 
-		try {
-			$result = Client::send_request( $body );
-		} catch ( Exception $e ) {
-			return new WP_Error( 'connection_error', $e->getMessage() );
-		}
+if ( is_wp_error( $response ) ) {
+return new WP_Error( 'connection_error', $response->get_error_message() );
+}
 
-		return $result;
-	}
+return array( 'status' => 'ok' );
+}
 
 	/**
 	 * Verifies the connection to a specific page.

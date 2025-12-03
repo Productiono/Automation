@@ -58,8 +58,8 @@ class Page_Connection_Verifier {
 			return $this->format_status_message( $cached_statuses[ $page_id ] );
 		}
 
-		// Fetch the status from the external service.
-		$status = $this->fetch_status_from_service( $page_id );
+// Fetch the status directly from Facebook.
+$status = $this->fetch_status_from_service( $page_id );
 
 		// Cache the status.
 		$this->cache_status( $page_id, $status );
@@ -114,37 +114,18 @@ class Page_Connection_Verifier {
 			return new WP_Error( 'connection_error', esc_html_x( 'No access token found for the provided page ID.', 'Facebook Lead Ads', 'uncanny-automator' ) );
 		}
 
-		// Prepare the request body.
-		$body = $this->prepare_request_body( $page_id, $access_token );
+try {
+$result = ( new Client() )->verify_page( $page_id, $access_token );
 
-		try {
-			// Send the request to the external service.
-			$result = Client::send_request( $body );
+if ( is_wp_error( $result ) ) {
+return $result;
+}
 
-			// Return success message.
-			return esc_html_x( 'Ready', 'Facebook Lead Ads', 'uncanny-automator' );
-		} catch ( Exception $e ) {
-			// Return error as WP_Error.
-			return new WP_Error( 'connection_error', $e->getMessage() );
-		}
-	}
-
-	/**
-	 * Prepare the request body for the external service.
-	 *
-	 * Generates the required data structure for the API request.
-	 *
-	 * @param int|string $page_id Page ID.
-	 * @param string     $access_token Page access token.
-	 * @return array Prepared request body.
-	 */
-	private function prepare_request_body( $page_id, $access_token ) {
-		return array(
-			'action'            => 'verify_page_connection',
-			'page_id'           => $page_id,
-			'page_access_token' => $access_token,
-		);
-	}
+return esc_html_x( 'Ready', 'Facebook Lead Ads', 'uncanny-automator' );
+} catch ( Exception $e ) {
+return new WP_Error( 'connection_error', $e->getMessage() );
+}
+}
 
 	/**
 	 * Format the status message with the time last checked.
