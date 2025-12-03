@@ -352,9 +352,9 @@ return Automator_Helpers_Recipe::automator_api_decode_message( $data, wp_create_
 	 *
 	 * @return string Connection URL.
 	 */
-        public static function get_connect_url() {
+	public static function get_connect_url() {
 		$scope = implode(
-			','
+			',',
 			array(
 				'pages_manage_metadata',
 				'pages_read_engagement',
