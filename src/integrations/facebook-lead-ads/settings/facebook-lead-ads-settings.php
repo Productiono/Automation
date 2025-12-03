@@ -164,12 +164,13 @@ class Facebook_Lead_Ads_Settings extends \Uncanny_Automator\Settings\Premium_Int
 	 */
 	public function output_panel_content() {
 
-		// Loads CSS files.
-		$this->load_css( '/facebook-lead-ads/settings/assets/style.css' );
+                // Loads CSS files.
+                $this->load_css( '/facebook-lead-ads/settings/assets/style.css' );
 
-		// Loads JS files.
-		$this->load_js( '/facebook-lead-ads/settings/assets/test-connection.js' );
-		$this->load_js( '/facebook-lead-ads/settings/assets/pages.js', '_fbla-pages' );
+                // Loads JS files.
+                $this->load_js( '/facebook-lead-ads/settings/assets/test-connection.js' );
+                $this->load_js( '/facebook-lead-ads/settings/assets/manual-connection.js' );
+                $this->load_js( '/facebook-lead-ads/settings/assets/pages.js', '_fbla-pages' );
 
 		wp_localize_script(
 			'uap-premium-integration-facebook_lead_ads_fbla-pages',

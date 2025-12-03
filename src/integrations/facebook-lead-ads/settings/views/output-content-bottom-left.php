@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="uap-spacing-bottom">
+<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="uap-spacing-bottom" id="fblaManualConnectionForm">
         <?php wp_nonce_field( 'automator_fbla_manual_save', 'automator_fbla_nonce' ); ?>
         <input type="hidden" name="action" value="automator_fbla_manual_save" />
 
@@ -55,3 +55,4 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <?php echo esc_html_x( 'Save connection details', 'Facebook Lead Ads', 'uncanny-automator' ); ?>
         </uo-button>
 </form>
+<div id="fblaManualConnectionNotice"></div>

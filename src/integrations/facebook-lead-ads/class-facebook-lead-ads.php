@@ -50,6 +50,7 @@ class Facebook_Lead_Ads_Integration extends \Uncanny_Automator\Integration {
 
                 // Manual credential handler.
                 add_action( 'admin_post_automator_fbla_manual_save', array( Facebook_Lead_Ads_Helpers::class, 'manual_credentials_handler' ) );
+                add_action( 'wp_ajax_automator_fbla_manual_save', array( Facebook_Lead_Ads_Helpers::class, 'manual_credentials_handler' ) );
 
                 // Forms selection handler. Ok.
                 add_action( 'wp_ajax_automator_facebook_lead_ads_forms_handler', array( Facebook_Lead_Ads_Helpers::class, 'forms_handler' ) );
