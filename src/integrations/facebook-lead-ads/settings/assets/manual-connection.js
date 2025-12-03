@@ -28,8 +28,10 @@
                 const formData = new FormData(form);
                 formData.set('action', 'automator_fbla_manual_save');
 
+                const ajaxUrl = (window.UncannyAutomatorBackend?.ajax?.url) || form.getAttribute('action');
+
                 try {
-                        const response = await fetch(UncannyAutomatorBackend.ajax.url, {
+                        const response = await fetch(ajaxUrl, {
                                 method: 'POST',
                                 credentials: 'same-origin',
                                 body: formData,
