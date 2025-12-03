@@ -34,10 +34,20 @@ if ( ! defined( 'AUTOMATOR_BASE_FILE' ) ) {
 }
 
 if ( ! defined( 'UNCANNY_AUTOMATOR_ASSETS_DIR' ) ) {
-	/*
-	 * Specify Automator assets directory.
-	 */
-	define( 'UNCANNY_AUTOMATOR_ASSETS_DIR', plugin_dir_path( __FILE__ ) . 'src/assets/' );
+        /*
+         * Specify Automator assets directory.
+         */
+        define( 'UNCANNY_AUTOMATOR_ASSETS_DIR', plugin_dir_path( __FILE__ ) . 'src/assets/' );
+}
+
+/**
+ * Determines whether Automator update checks should be disabled.
+ *
+ * @return bool
+ */
+function automator_updates_disabled() {
+
+        return (bool) apply_filters( 'automator_disable_updates', true );
 }
 
 if ( ! defined( 'UNCANNY_AUTOMATOR_ASSETS_URL' ) ) {

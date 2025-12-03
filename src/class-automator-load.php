@@ -58,12 +58,16 @@ class Automator_Load {
 	/**
 	 * class constructor
 	 */
-	public function __construct() {
+        public function __construct() {
 
-		add_action( 'upgrader_process_complete', array( $this, 'flag_last_updated' ), 20, 2 );
+                add_action( 'upgrader_process_complete', array( $this, 'flag_last_updated' ), 20, 2 );
 
-		// Load text domain
-		add_action(
+                if ( function_exists( '\\automator_updates_disabled' ) && automator_updates_disabled() ) {
+                        $this->disable_plugin_update_checks();
+                }
+
+                // Load text domain
+                add_action(
 			'init',
 			function () {
 				Automator()->automator_load_textdomain();
@@ -117,12 +121,12 @@ class Automator_Load {
 		$this->initiate_setup_wizard();
 
 		// Show upgrade notice from readme.txt.
-		if ( self::$is_admin_sect ) {
-			add_action(
-				'in_plugin_update_message-' . plugin_basename( AUTOMATOR_BASE_FILE ),
-				array( $this, 'in_plugin_update_message' ),
-				10,
-				2
+                if ( self::$is_admin_sect && ( ! function_exists( '\\automator_updates_disabled' ) || ! automator_updates_disabled() ) ) {
+                        add_action(
+                                'in_plugin_update_message-' . plugin_basename( AUTOMATOR_BASE_FILE ),
+                                array( $this, 'in_plugin_update_message' ),
+                                10,
+                                2
 			);
 			$this->load_deactivation_survey();
 		}
@@ -595,28 +599,140 @@ class Automator_Load {
 	 * @param $args
 	 * @param $response
 	 */
-	public function in_plugin_update_message( $args, $response ) {
-		$upgrade_notice = '';
-		if ( isset( $response->upgrade_notice ) && ! empty( $response->upgrade_notice ) ) {
-			$upgrade_notice .= '<div class="ua_plugin_upgrade_notice">';
-			$upgrade_notice .= sprintf( '<strong>%s</strong>', esc_html__( 'Heads up!', 'uncanny-automator' ) );
-			$upgrade_notice .= preg_replace( '~\[([^\]]*)\]\(([^\)]*)\)~', '<a href="${2}">${1}</a>', $response->upgrade_notice );
-			$upgrade_notice .= '</div>';
-		}
+        public function in_plugin_update_message( $args, $response ) {
+                $upgrade_notice = '';
+                if ( isset( $response->upgrade_notice ) && ! empty( $response->upgrade_notice ) ) {
+                        $upgrade_notice .= '<div class="ua_plugin_upgrade_notice">';
+                        $upgrade_notice .= sprintf( '<strong>%s</strong>', esc_html__( 'Heads up!', 'uncanny-automator' ) );
+                        $upgrade_notice .= preg_replace( '~\[([^\]]*)\]\(([^\)]*)\)~', '<a href="${2}">${1}</a>', $response->upgrade_notice );
+                        $upgrade_notice .= '</div>';
+                }
 
-		echo wp_kses_post(
-			apply_filters(
-				'uap_in_plugin_update_message',
-				$upgrade_notice ? '</p>' . wp_kses_post( $upgrade_notice ) . '<p class="dummy">' : '',
-				$args
-			)
-		);
-	}
+                echo wp_kses_post(
+                        apply_filters(
+                                'uap_in_plugin_update_message',
+                                $upgrade_notice ? '</p>' . wp_kses_post( $upgrade_notice ) . '<p class="dummy">' : '',
+                                $args
+                        )
+                );
+        }
 
-	/**
-	 * @param array $classes
-	 *
-	 * @return array|mixed
+        /**
+         * Prevents WordPress from requesting or displaying update data for Automator plugins.
+         *
+         * @return void
+         */
+        protected function disable_plugin_update_checks() {
+
+                $plugin_basenames = array( plugin_basename( AUTOMATOR_BASE_FILE ) );
+                $plugin_slugs     = array( basename( dirname( AUTOMATOR_BASE_FILE ) ) );
+
+                if ( defined( 'AUTOMATOR_PRO_PLUGIN_BASENAME' ) ) {
+                        $plugin_basenames[] = AUTOMATOR_PRO_PLUGIN_BASENAME;
+                        $plugin_slugs[]     = basename( dirname( AUTOMATOR_PRO_PLUGIN_BASENAME ) );
+                }
+
+                $plugin_basenames = array_unique( $plugin_basenames );
+                $plugin_slugs     = array_unique( $plugin_slugs );
+
+                $mark_plugins_as_current = static function ( $transient ) use ( $plugin_basenames ) {
+                        if ( ! is_object( $transient ) ) {
+                                $transient = new \stdClass();
+                        }
+
+                        if ( ! isset( $transient->response ) || ! is_array( $transient->response ) ) {
+                                $transient->response = array();
+                        }
+
+                        if ( ! isset( $transient->checked ) || ! is_array( $transient->checked ) ) {
+                                $transient->checked = array();
+                        }
+
+                        if ( ! isset( $transient->no_update ) || ! is_array( $transient->no_update ) ) {
+                                $transient->no_update = array();
+                        }
+
+                        foreach ( $plugin_basenames as $basename ) {
+                                $version = AUTOMATOR_PLUGIN_VERSION;
+
+                                if ( defined( 'AUTOMATOR_PRO_PLUGIN_BASENAME' ) && $basename === AUTOMATOR_PRO_PLUGIN_BASENAME && defined( 'AUTOMATOR_PRO_PLUGIN_VERSION' ) ) {
+                                        $version = AUTOMATOR_PRO_PLUGIN_VERSION;
+                                }
+
+                                unset( $transient->response[ $basename ] );
+
+                                $transient->checked[ $basename ] = $version;
+
+                                $transient->no_update[ $basename ] = (object) array(
+                                        'id'          => $basename,
+                                        'slug'        => basename( dirname( $basename ) ),
+                                        'plugin'      => $basename,
+                                        'new_version' => $version,
+                                        'url'         => '',
+                                        'package'     => '',
+                                );
+                        }
+
+                        $transient->last_checked = time();
+
+                        return $transient;
+                };
+
+                add_filter( 'site_transient_update_plugins', $mark_plugins_as_current );
+                add_filter( 'pre_set_site_transient_update_plugins', $mark_plugins_as_current );
+
+                add_filter(
+                        'plugins_api',
+                        static function ( $default, $action, $args ) use ( $plugin_slugs ) {
+                                if ( isset( $args->slug ) && in_array( $args->slug, $plugin_slugs, true ) ) {
+                                        return new \WP_Error( 'automator_updates_disabled', esc_html__( 'Updates for Uncanny Automator are disabled.', 'uncanny-automator' ) );
+                                }
+
+                                return $default;
+                        },
+                        5,
+                        3
+                );
+
+                add_filter(
+                        'http_request_args',
+                        static function ( $args, $url ) use ( $plugin_basenames ) {
+                                if ( false === strpos( $url, '//api.wordpress.org/plugins/update-check' ) || empty( $args['body']['plugins'] ) ) {
+                                        return $args;
+                                }
+
+                                $payload = $args['body']['plugins'];
+
+                                $decoded_payload = json_decode( $payload );
+                                if ( is_null( $decoded_payload ) ) {
+                                        $decoded_payload = maybe_unserialize( $payload );
+                                }
+
+                                if ( ! is_object( $decoded_payload ) || empty( $decoded_payload->plugins ) || ! is_array( $decoded_payload->plugins ) ) {
+                                        return $args;
+                                }
+
+                                foreach ( $plugin_basenames as $basename ) {
+                                        unset( $decoded_payload->plugins[ $basename ] );
+                                }
+
+                                if ( isset( $decoded_payload->active ) && is_array( $decoded_payload->active ) ) {
+                                        $decoded_payload->active = array_values( array_diff( $decoded_payload->active, $plugin_basenames ) );
+                                }
+
+                                $args['body']['plugins'] = wp_json_encode( $decoded_payload );
+
+                                return $args;
+                        },
+                        5,
+                        2
+                );
+        }
+
+        /**
+         * @param array $classes
+         *
+         * @return array|mixed
 	 */
 	public function admin_only_classes( $classes = array() ) {
 		/**
